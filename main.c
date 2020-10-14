@@ -16,6 +16,8 @@
 #include "I2C_FreeRtos.h"
 
 /* TODO: insert other definitions and declarations here. */
+
+/**
 void uart_echo_task(void * args)
 {
   uint8_t data;
@@ -40,7 +42,7 @@ void uart_echo_task(void * args)
 //		vTaskDelay( pdMS_TO_TICKS(1000) );
 	}
 }
-
+*/
 int main(void)
 {
 
@@ -53,7 +55,7 @@ int main(void)
 
   PRINTF("Hello World\n");
 
-  xTaskCreate(uart_echo_task, "uart_echo_task", 110, NULL, 1, NULL);
+  // xTaskCreate(uart_echo_task, "uart_echo_task", 110, NULL, 1, NULL);
 
   vTaskStartScheduler();
 
