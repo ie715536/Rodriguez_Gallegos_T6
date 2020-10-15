@@ -10,6 +10,8 @@
 #include "clock_config.h"
 #include "MK66F18.h"
 #include "fsl_debug_console.h"
+#include "FreeRTOSConfig.h"
+#include "BMI160.h"
 /* TODO: insert other include files here. */
 #include "FreeRTOS.h"
 #include "task.h"
