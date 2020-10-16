@@ -22,6 +22,7 @@
 void init_BMI160_task(void * args);
 void get_data_task(void * args);
 
+SemaphoreHandle_t BMI160_initialization;
 int main(void)
 {
 
@@ -46,14 +47,14 @@ int main(void)
 
   while(1)
   {
-    i++ ;
+    i++;
     __asm volatile ("nop");
   }
 
   return 0 ;
 }
 
-void init_IBM160_task(void * args)
+void init_BMI160_task(void * args)
 {
 	freertos_bmi160_flag_t status;
 	status = BMI160_init();
