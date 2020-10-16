@@ -34,7 +34,7 @@
 #define BAUDRATE_I2C 115200U
 
 /** BMI160 Address as Slave, 0b1101001 Alternative Address */
-#define BMI160_ADD 0b1101000
+#define BMI160_ADD 0x68
 
 /** Registers */
 #define BMI160_GYRO_LSB_X_REG 0x0C // 7-0 gyro x slave
@@ -65,15 +65,6 @@
 
 /** Max Delay of I2C in ms */
 #define I2C_DELAY 100
-
-/** No usadas TODO
-#define I2C_BAUDRATE 100000U
-#define I2C_MASTER_SLAVE_ADDR_7BIT 0x7EU
-#define I2C_MASTER_CLK_SRC I2C0_CLK_SRC
-#define I2C_MASTER_CLK_FREQ CLOCK_GetFreq(I2C0_CLK_SRC)
-#define I2C_MASTER_ADD_BASE I2C0
-
-*/
 
 typedef struct
 {

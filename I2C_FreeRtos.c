@@ -35,22 +35,12 @@ freertos_i2c_flag_t freertos_i2c_init(freertos_i2c_config_t config)
 			freertos_i2c_handles[config.i2c_number].semphr = xSemaphoreCreateBinary();
 
 			/* Clock Enable */
-
 			freertos_i2c_enable_port_clock(config.port);
 			freertos_enable_i2c_clock(config.i2c_number);
 
-			/**
-			PORT_SetPinConfig(get_port_base(config.port), config.SCL_pin, &config_i2c);
-			PORT_SetPinConfig(get_port_base(config.port), config.SDA_pin, &config_i2c);
-
-
-			 TODO
-
-			 */
-
-			/* Port Config */
-			PORT_SetPinMux(freertos_i2c_get_port_base(config.port), config.SCL_pin, config.pin_mux);
-			PORT_SetPinMux(freertos_i2c_get_port_base(config.port), config.SDA_pin, config.pin_mux);
+			/* Port sets */
+			PORT_SetPinMux(freertos_i2c_get_port_base(config.port), config.SCL, config.pin_mux);
+			PORT_SetPinMux(freertos_i2c_get_port_base(config.port), config.SDA, config.pin_mux);
 
 			I2C_MasterGetDefaultConfig(&fsl_i2c_config);
 			fsl_i2c_config.baudRate_Bps = config.baudrate;
@@ -85,21 +75,21 @@ freertos_i2c_flag_t freertos_i2c_init(freertos_i2c_config_t config)
 freertos_i2c_flag_t freertos_i2c_transfer(freertos_i2c_number_t i2c_number, uint8_t * buffer, uint16_t length, uint8_t slaveAddress, uint32_t subaddress, uint8_t subaddressSize)
 {
 	freertos_i2c_flag_t flag = freertos_i2c_fail;
-	i2c_master_transfer_t xfer;
+	i2c_master_transfer_t transfer;
 
 	if(freertos_i2c_handles[i2c_number].is_init)
 	{
-		xfer.flags = kI2C_TransferDefaultFlag; /** default flag for transference */
-		xfer.slaveAddress = slaveAddress;
-		xfer.direction = kI2C_Write; /** We want to transfer */
-		xfer.subaddress = subaddress;
-		xfer.subaddressSize = subaddressSize;
-		xfer.data = buffer;
-		xfer.dataSize = length;
+		transfer.flags = kI2C_TransferDefaultFlag; /** default flag for transference */
+		transfer.slaveAddress = slaveAddress;
+		transfer.direction = kI2C_Write; /** We want to transfer */
+		transfer.subaddress = subaddress;
+		transfer.subaddressSize = subaddressSize;
+		transfer.data = buffer;
+		transfer.dataSize = length;
 
 		xSemaphoreTake(freertos_i2c_handles[i2c_number].mutex, portMAX_DELAY);
 
-		I2C_MasterTransferNonBlocking(freertos_i2c_get_i2c_base(i2c_number), &freertos_i2c_handles[i2c_number].fsl_i2c_master_handle, &xfer);
+		I2C_MasterTransferNonBlocking(freertos_i2c_get_i2c_base(i2c_number), &freertos_i2c_handles[i2c_number].fsl_i2c_master_handle, &transfer);
 
 		xSemaphoreTake(freertos_i2c_handles[i2c_number].semphr, portMAX_DELAY);
 
@@ -114,21 +104,39 @@ freertos_i2c_flag_t freertos_i2c_transfer(freertos_i2c_number_t i2c_number, uint
 freertos_i2c_flag_t freertos_i2c_receive(freertos_i2c_number_t i2c_number, uint8_t * buffer, uint16_t length, uint8_t slaveAddress, uint32_t subaddress, uint8_t subaddressSize)
 {
 	freertos_i2c_flag_t flag = freertos_i2c_fail;
-	i2c_master_transfer_t xfer;
+	i2c_master_transfer_t transfer;
 
 	if(freertos_i2c_handles[i2c_number].is_init)
 	{
-		xfer.flags = kI2C_TransferDefaultFlag; /** default flag for transference */
-		xfer.slaveAddress = slaveAddress;
-		xfer.direction = kI2C_Read; /** We want to transfer */
-		xfer.subaddress = subaddress;
-		xfer.subaddressSize = subaddressSize;
-		xfer.data = buffer;
-		xfer.dataSize = length;
+		/** Se realiza primero un write antes del read*/
+		transfer.flags = kI2C_TransferDefaultFlag; /** default flag for transference */
+		transfer.slaveAddress = slaveAddress;
+		transfer.direction = kI2C_Write;
+		transfer.subaddress = subaddress;
+		transfer.subaddressSize = subaddressSize;
+		transfer.data = buffer;
+		transfer.dataSize = length;
 
 		xSemaphoreTake(freertos_i2c_handles[i2c_number].mutex, portMAX_DELAY);
 
-		I2C_MasterTransferNonBlocking(freertos_i2c_get_i2c_base(i2c_number), &freertos_i2c_handles[i2c_number].fsl_i2c_master_handle, &xfer);
+		I2C_MasterTransferNonBlocking(freertos_i2c_get_i2c_base(i2c_number), &freertos_i2c_handles[i2c_number].fsl_i2c_master_handle, &transfer);
+
+		xSemaphoreTake(freertos_i2c_handles[i2c_number].semphr, portMAX_DELAY);
+
+
+		flag = freertos_i2c_sucess;
+
+		/** Se realiza el Read que se buscaba */
+		transfer.flags = kI2C_TransferDefaultFlag; /** default flag for transference */
+		transfer.slaveAddress = slaveAddress;
+		transfer.direction = kI2C_Read; /** We want to recieve */
+		transfer.subaddress = subaddress;
+		transfer.subaddressSize = subaddressSize;
+		transfer.data = buffer;
+		transfer.dataSize = length;
+
+
+		I2C_MasterTransferNonBlocking(freertos_i2c_get_i2c_base(i2c_number), &freertos_i2c_handles[i2c_number].fsl_i2c_master_handle, &transfer);
 
 		xSemaphoreTake(freertos_i2c_handles[i2c_number].semphr, portMAX_DELAY);
 
@@ -154,6 +162,9 @@ static inline void freertos_enable_i2c_clock(freertos_i2c_number_t i2c_number)
 		/**I2C 2*/
 	case freertos_i2c2:
 		CLOCK_EnableClock(kCLOCK_I2c2);
+		break;
+	case freertos_i2c3:
+		CLOCK_EnableClock(kCLOCK_I2c3);
 		break;
 	}
 }
@@ -220,6 +231,9 @@ static inline I2C_Type * freertos_i2c_get_i2c_base(freertos_i2c_number_t i2c_num
 		break;
 	case freertos_i2c2:
 		retval = I2C2;
+		break;
+	case freertos_i2c3:
+		retval = I2C3;
 		break;
 	}
 
