@@ -16,7 +16,7 @@
 #include "semphr.h"
 
 /**Defines number of serial ports*/
-#define NUMBER_OF_SERIAL_PORTS (3)
+#define NUMBER_OF_SERIAL_PORTS (4)
 
 typedef enum
 {

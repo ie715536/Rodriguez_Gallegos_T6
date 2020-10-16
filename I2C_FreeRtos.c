@@ -4,8 +4,8 @@ typedef struct
 {
 	uint8_t is_init;
 	i2c_master_handle_t fsl_i2c_master_handle;
-	SemaphoreHandle_t mutex_tx_rx; /** Same mutex to transfer and receive*/
-	SemaphoreHandle_t tx_rx_sem; /** Same semphr to transfer and receive*/
+	SemaphoreHandle_t mutex; /** Same mutex to transfer and receive*/
+	SemaphoreHandle_t semphr; /** Same semphr to transfer and receive*/
 } freertos_i2c_hanlde_t;
 
 static freertos_i2c_hanlde_t freertos_i2c_handles[NUMBER_OF_SERIAL_PORTS] = {0};
@@ -19,7 +19,7 @@ static inline PORT_Type * freertos_i2c_get_port_base(freertos_i2c_port_t port);
 /**Gets the I2C to use*/
 static inline I2C_Type * freertos_i2c_get_i2c_base(freertos_i2c_number_t i2c_number );
 
-/**Callback function when I2C is finished*/
+/**Callback function to determinate when I2C is finished*/
 static void fsl_i2c_callback(I2C_Type *base, i2c_master_handle_t *handle, status_t status, void *userData);
 
 freertos_i2c_flag_t freertos_i2c_init(freertos_i2c_config_t config)
@@ -27,21 +27,12 @@ freertos_i2c_flag_t freertos_i2c_init(freertos_i2c_config_t config)
 	freertos_i2c_flag_t retval = freertos_i2c_fail;
 	i2c_master_config_t  fsl_i2c_config;
 
-	/**
-	port_pin_config_t config_i2c =
-		{ kPORT_PullUp, kPORT_SlowSlewRate, kPORT_PassiveFilterDisable,
-				kPORT_OpenDrainDisable, kPORT_LowDriveStrength, kPORT_MuxAlt2,
-				kPORT_UnlockRegister, };
-
-	TODO
-	 */
-
 	if(config.i2c_number < NUMBER_OF_SERIAL_PORTS)
 	{
 		if(!freertos_i2c_handles[config.i2c_number].is_init)
 		{
-			freertos_i2c_handles[config.i2c_number].mutex_tx_rx = xSemaphoreCreateMutex();
-			freertos_i2c_handles[config.i2c_number].tx_rx_sem = xSemaphoreCreateBinary();
+			freertos_i2c_handles[config.i2c_number].mutex = xSemaphoreCreateMutex();
+			freertos_i2c_handles[config.i2c_number].semphr = xSemaphoreCreateBinary();
 
 			/* Clock Enable */
 
@@ -106,13 +97,13 @@ freertos_i2c_flag_t freertos_i2c_transfer(freertos_i2c_number_t i2c_number, uint
 		xfer.data = buffer;
 		xfer.dataSize = length;
 
-		xSemaphoreTake(freertos_i2c_handles[i2c_number].mutex_tx_rx, portMAX_DELAY);
+		xSemaphoreTake(freertos_i2c_handles[i2c_number].mutex, portMAX_DELAY);
 
 		I2C_MasterTransferNonBlocking(freertos_i2c_get_i2c_base(i2c_number), &freertos_i2c_handles[i2c_number].fsl_i2c_master_handle, &xfer);
 
-		xSemaphoreTake(freertos_i2c_handles[i2c_number].tx_rx_sem, portMAX_DELAY);
+		xSemaphoreTake(freertos_i2c_handles[i2c_number].semphr, portMAX_DELAY);
 
-		xSemaphoreGive(freertos_i2c_handles[i2c_number].mutex_tx_rx);
+		xSemaphoreGive(freertos_i2c_handles[i2c_number].mutex);
 
 		flag = freertos_i2c_sucess;
 	}
@@ -135,13 +126,13 @@ freertos_i2c_flag_t freertos_i2c_receive(freertos_i2c_number_t i2c_number, uint8
 		xfer.data = buffer;
 		xfer.dataSize = length;
 
-		xSemaphoreTake(freertos_i2c_handles[i2c_number].mutex_tx_rx, portMAX_DELAY);
+		xSemaphoreTake(freertos_i2c_handles[i2c_number].mutex, portMAX_DELAY);
 
 		I2C_MasterTransferNonBlocking(freertos_i2c_get_i2c_base(i2c_number), &freertos_i2c_handles[i2c_number].fsl_i2c_master_handle, &xfer);
 
-		xSemaphoreTake(freertos_i2c_handles[i2c_number].tx_rx_sem, portMAX_DELAY);
+		xSemaphoreTake(freertos_i2c_handles[i2c_number].semphr, portMAX_DELAY);
 
-		xSemaphoreGive(freertos_i2c_handles[i2c_number].mutex_tx_rx);
+		xSemaphoreGive(freertos_i2c_handles[i2c_number].mutex);
 
 		flag = freertos_i2c_sucess;
 	}
@@ -243,15 +234,15 @@ static void fsl_i2c_callback(I2C_Type *base, i2c_master_handle_t *handle, status
 	{
 		if (I2C0 == base)
 		{
-			xSemaphoreGiveFromISR(freertos_i2c_handles[freertos_i2c0].tx_rx_sem, &xHigherPriorityTaskWoken);
+			xSemaphoreGiveFromISR(freertos_i2c_handles[freertos_i2c0].semphr, &xHigherPriorityTaskWoken);
 		}
 		else if(I2C1 == base)
 		{
-			xSemaphoreGiveFromISR(freertos_i2c_handles[freertos_i2c1].tx_rx_sem, &xHigherPriorityTaskWoken);
+			xSemaphoreGiveFromISR(freertos_i2c_handles[freertos_i2c1].semphr, &xHigherPriorityTaskWoken);
 		}
 		else if(I2C2 == base)
 		{
-			xSemaphoreGiveFromISR(freertos_i2c_handles[freertos_i2c2].tx_rx_sem, &xHigherPriorityTaskWoken);
+			xSemaphoreGiveFromISR(freertos_i2c_handles[freertos_i2c2].semphr, &xHigherPriorityTaskWoken);
 		}
 	}
 
