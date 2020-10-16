@@ -9,8 +9,14 @@
 #define I2C_FREERTOS_H_
 
 #include "stdint.h"
+#include "fsl_i2c.h"
+#include "fsl_clock.h"
+#include "fsl_port.h"
+#include "FreeRTOS.h"
+#include "semphr.h"
 
-
+/**Defines number of serial ports*/
+#define NUMBER_OF_SERIAL_PORTS (3)
 
 typedef enum
 {
@@ -43,5 +49,9 @@ typedef struct
 	uint8_t SDA_pin;
 	uint8_t pin_mux;
 }freertos_i2c_config_t ;
+
+freertos_i2c_flag_t freertos_i2c_init(freertos_i2c_config_t config);
+freertos_i2c_flag_t freertos_i2c_transfer(freertos_i2c_number_t i2c_number, uint8_t * buffer, uint16_t length, uint8_t slaveAddress, uint32_t subaddress, uint8_t subaddressSize);
+freertos_i2c_flag_t freertos_i2c_receive(freertos_i2c_number_t i2c_number, uint8_t * buffer, uint16_t lenght, uint8_t slaveAddress, uint32_t subaddress, uint8_t subaddressSize);
 
 #endif /* I2C_FREERTOS_H_ */

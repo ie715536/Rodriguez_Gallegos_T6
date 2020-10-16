@@ -1,15 +1,5 @@
 #include "I2C_FreeRtos.h"
 
-#include "fsl_i2c.h"
-#include "fsl_clock.h"
-#include "fsl_port.h"
-
-#include "FreeRTOS.h"
-#include "semphr.h"
-
-/**Defines number of serial ports*/
-#define NUMBER_OF_SERIAL_PORTS (4)
-
 typedef struct
 {
 	uint8_t is_init;
@@ -130,7 +120,7 @@ freertos_i2c_flag_t freertos_i2c_transfer(freertos_i2c_number_t i2c_number, uint
 	return flag;
 }
 
-freertos_i2c_flag_t freertos_i2c_recieve(freertos_i2c_number_t i2c_number, uint8_t * buffer, uint16_t length, uint8_t slaveAddress, uint32_t subaddress, uint8_t subaddressSize)
+freertos_i2c_flag_t freertos_i2c_receive(freertos_i2c_number_t i2c_number, uint8_t * buffer, uint16_t length, uint8_t slaveAddress, uint32_t subaddress, uint8_t subaddressSize)
 {
 	freertos_i2c_flag_t flag = freertos_i2c_fail;
 	i2c_master_transfer_t xfer;
