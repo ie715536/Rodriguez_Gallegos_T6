@@ -108,22 +108,6 @@ freertos_i2c_flag_t freertos_i2c_receive(freertos_i2c_number_t i2c_number, uint8
 
 	if(freertos_i2c_handles[i2c_number].is_init)
 	{
-		/** Se realiza primero un write antes del read*/
-		transfer.flags = kI2C_TransferDefaultFlag; /** default flag for transference */
-		transfer.slaveAddress = slaveAddress;
-		transfer.direction = kI2C_Write;
-		transfer.subaddress = subaddress;
-		transfer.subaddressSize = subaddressSize;
-		transfer.data = buffer;
-		transfer.dataSize = length;
-
-		xSemaphoreTake(freertos_i2c_handles[i2c_number].mutex, portMAX_DELAY);
-
-		I2C_MasterTransferNonBlocking(freertos_i2c_get_i2c_base(i2c_number), &freertos_i2c_handles[i2c_number].fsl_i2c_master_handle, &transfer);
-
-		xSemaphoreTake(freertos_i2c_handles[i2c_number].semphr, portMAX_DELAY);
-
-
 		flag = freertos_i2c_sucess;
 
 		/** Se realiza el Read que se buscaba */
@@ -135,6 +119,8 @@ freertos_i2c_flag_t freertos_i2c_receive(freertos_i2c_number_t i2c_number, uint8
 		transfer.data = buffer;
 		transfer.dataSize = length;
 
+
+		xSemaphoreTake(freertos_i2c_handles[i2c_number].mutex, portMAX_DELAY);
 
 		I2C_MasterTransferNonBlocking(freertos_i2c_get_i2c_base(i2c_number), &freertos_i2c_handles[i2c_number].fsl_i2c_master_handle, &transfer);
 

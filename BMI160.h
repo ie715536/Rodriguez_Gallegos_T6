@@ -37,6 +37,8 @@
 #define BMI160_ADD 0x68
 
 /** Registers */
+#define BMI160_CHIPID 0x00 // 7-0 gyro x slave
+
 #define BMI160_GYRO_LSB_X_REG 0x0C // 7-0 gyro x slave
 #define BMI160_GYRO_MSB_X_REG 0x0D // 15-8 gyro x master
 #define BMI160_GYRO_LSB_Y_REG 0x0E // 7-0 gyro y slave

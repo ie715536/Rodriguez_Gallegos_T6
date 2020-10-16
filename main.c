@@ -33,8 +33,6 @@ int main(void)
   /* Init FSL debug console. */
   BOARD_InitDebugConsole();
 
-  PRINTF("Hello World\n");
-
   xTaskCreate(init_BMI160_task, "init_BMI160", 110, NULL, 1, NULL);
   xTaskCreate(get_data_task, "get_data", 110, NULL, 1, NULL);
 
@@ -58,12 +56,20 @@ void init_BMI160_task(void * args)
 {
 	freertos_bmi160_flag_t status;
 	status = BMI160_init();
+	freertos_i2c_flag_t retval;
+	uint8_t byte;
+	retval = freertos_i2c_receive(freertos_i2c0, &byte, I2C_INIT_DATA_LENGTH, BMI160_ADD,BMI160_CHIPID, I2C_SUB_ADD_SIZE);
 	if(freertos_bmi160_sucess != status)
 	{
 		PRINTF("FAIL INITIALIZATION");
 		for(;;);
 	}
+
+	PRINTF("CHIP_DI : %x\n\r", byte); /** Prueba de comunicación con el I2C y el BMI160 */
+
 	xSemaphoreGive(BMI160_initialization);
+
+	vTaskDelay(portMAX_DELAY); /** Delay infinito */
 }
 
 void get_data_task(void * args)
@@ -83,7 +89,7 @@ void get_data_task(void * args)
 		acc_data = BMI160_get_ACCEL();
 		gyro_data = BMI160_get_GYRO();
 
-		PRINTF("Aceleración\tx: %d\ty: %d\tz: %d\t\r\n", acc_data.x, acc_data.y, acc_data.z);
+		PRINTF("Accel \tx: %d\ty: %d\tz: %d\t\r\n", acc_data.x, acc_data.y, acc_data.z);
 		PRINTF("Giro: \tx: %d\ty: %d\tz: %d\t\r\n", gyro_data.x, gyro_data.y, gyro_data.z);
 	}
 }
