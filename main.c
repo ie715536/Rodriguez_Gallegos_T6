@@ -19,32 +19,9 @@
 
 /* TODO: insert other definitions and declarations here. */
 
-/**
-void uart_echo_task(void * args)
-{
-  uint8_t data;
-	freertos_I2C_config_t config;
+void init_BMI160_task(void * args);
+void get_data_task(void * args);
 
-	config.baudrate = 115200;
-	config.rx_pin = 16;
-	config.tx_pin = 17;
-	config.pin_mux = kPORT_MuxAlt3;
-	config.uart_number = freertos_uart0;
-	config.port = freertos_uart_portB;
-	freertos_I2C_init(config);
-
-	data = 0x41;
-
-	for(;;)
-	{
-		freertos_uart_receive(freertos_uart0, &data, 1);
-
-		freertos_uart_send(freertos_uart0, &data, 1);
-
-//		vTaskDelay( pdMS_TO_TICKS(1000) );
-	}
-}
-*/
 int main(void)
 {
 
@@ -57,7 +34,11 @@ int main(void)
 
   PRINTF("Hello World\n");
 
-  // xTaskCreate(uart_echo_task, "uart_echo_task", 110, NULL, 1, NULL);
+  xTaskCreate(init_BMI160_task, "init_BMI160", 110, NULL, 1, NULL);
+  xTaskCreate(get_data_task, "get_data", 110, NULL, 1, NULL);
+
+  BMI160_initialization = xSemaphoreCreateBinary();
+
 
   vTaskStartScheduler();
 
@@ -70,4 +51,38 @@ int main(void)
   }
 
   return 0 ;
+}
+
+void init_IBM160_task(void * args)
+{
+	freertos_bmi160_flag_t status;
+	status = BMI160_init();
+	if(freertos_bmi160_sucess != status)
+	{
+		PRINTF("FAIL INITIALIZATION");
+		for(;;);
+	}
+	xSemaphoreGive(BMI160_initialization);
+}
+
+void get_data_task(void * args)
+{
+	bmi160_raw_data_t acc_data;
+	bmi160_raw_data_t gyro_data;
+	TickType_t   xfactor = pdMS_TO_TICKS(1000);
+
+	xSemaphoreTake(BMI160_initialization, portMAX_DELAY);
+
+	TickType_t  xLastWakeTime = xTaskGetTickCount();
+
+	while(true)
+	{
+		vTaskDelayUntil(&xLastWakeTime,xfactor);
+
+		acc_data = BMI160_get_ACCEL();
+		gyro_data = BMI160_get_GYRO();
+
+		PRINTF("Aceleración\tx: %d\ty: %d\tz: %d\t\r\n", acc_data.x, acc_data.y, acc_data.z);
+		PRINTF("Giro: \tx: %d\ty: %d\tz: %d\t\r\n", gyro_data.x, gyro_data.y, gyro_data.z);
+	}
 }
